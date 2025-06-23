@@ -331,10 +331,12 @@ class GmailService():
             original_from = original_message.get('from', '')
             original_body = original_message.get('body', '')
         
-            full_reply_body = (
-                f"{reply_body}\n\n"
-                f"On {original_date}, {original_from} wrote:\n"
-                f"> {original_body.replace('\n', '\n> ') if original_body else '[No message body]'}"
+            reply_quote = "> " + original_body.replace('\\n', '\\n> ') if original_body else '[No message body]'
+            full_reply_body = "{reply_body}\\n\\nOn {original_date}, {original_from} wrote:\\n{reply_quote}".format(
+                reply_body=reply_body,
+                original_date=original_date,
+                original_from=original_from,
+                reply_quote=reply_quote
             )
 
             mime_message = MIMEText(full_reply_body)
