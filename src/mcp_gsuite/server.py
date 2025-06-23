@@ -25,6 +25,7 @@ import argparse
 import os
 
 def get_service_account_file() -> str:
+    logging.info(f"mcp-gsuite sys.argv: {sys.argv}")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--service-account-file",
@@ -32,7 +33,9 @@ def get_service_account_file() -> str:
         default="/var/secrets/google/calServiceAccount.json",
         help="Path to service account JSON file",
     )
-    args, _ = parser.parse_known_args()
+    args, unknown = parser.parse_known_args()
+    logging.info(f"mcp-gsuite parsed args: {args}")
+    logging.info(f"mcp-gsuite unknown args: {unknown}")
     return args.service_account_file
 
 class OauthListener(BaseHTTPRequestHandler):
