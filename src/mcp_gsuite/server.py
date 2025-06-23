@@ -160,6 +160,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | ImageCo
 
         user_id = arguments.get(toolhandler.USER_ID_ARG, "")
         service_account_file = get_service_account_file()
+        logging.info(f"[call_tool] Service account file path from args: {service_account_file}")
         
         # Try service account first
         if os.path.exists(service_account_file):
