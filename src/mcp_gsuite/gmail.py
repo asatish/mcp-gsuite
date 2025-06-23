@@ -17,33 +17,40 @@ class GmailService():
             service_account_file (str, optional): Path to the service account JSON file
         """
         try:
+            logging.info(f"Initializing GmailService for user: {user_id}")
             if service_account_file:
+                logging.info(f"Using service account file: {service_account_file}")
                 # Use service account authentication with impersonation
                 credentials = gauth.get_service_account_credentials(
                     service_account_file,
                     user_to_impersonate=user_id
                 )
             else:
+                logging.info("Using stored OAuth2 credentials.")
                 # Use OAuth2 authentication
                 credentials = gauth.get_stored_credentials(user_id=user_id)
                 if not credentials:
                     raise RuntimeError("No Oauth2 credentials stored")
                     
             # Build the Gmail service
+            logging.info("Building Gmail service...")
             self.service = build('gmail', 'v1', credentials=credentials)
             self.user_id = user_id
             
             # Test the connection
             try:
+                logging.info("Testing Gmail API connection...")
                 profile = self.service.users().getProfile(userId='me').execute()
                 logging.info(f"Successfully connected to Gmail API for user: {profile.get('emailAddress')}")
             except Exception as e:
                 logging.error(f"Failed to connect to Gmail API: {str(e)}")
-                raise
+                raise # Re-raise to be caught by the outer block
                 
         except Exception as e:
-            logging.error(f"Error initializing GmailService: {str(e)}")
-            raise
+            logging.error(f"Error initializing GmailService for user {user_id}: {str(e)}")
+            logging.error(traceback.format_exc())
+            # Re-raise as a generic error to be caught by the tool handler
+            raise RuntimeError(f"Failed to initialize Gmail API. Check service account permissions and configuration. Details: {e}")
 
     def _parse_message(self, txt, parse_body=False) -> dict | None:
         """
