@@ -6,10 +6,16 @@ from datetime import datetime
 import pytz
 
 class CalendarService():
-    def __init__(self, user_id: str):
-        credentials = gauth.get_stored_credentials(user_id=user_id)
-        if not credentials:
-            raise RuntimeError("No Oauth2 credentials stored")
+    def __init__(self, user_id: str, service_account_file: str = None):
+        if service_account_file:
+            # Use service account authentication
+            credentials = gauth.get_service_account_credentials(service_account_file)
+        else:
+            # Use OAuth2 authentication
+            credentials = gauth.get_stored_credentials(user_id=user_id)
+            if not credentials:
+                raise RuntimeError("No Oauth2 credentials stored")
+        
         self.service = build('calendar', 'v3', credentials=credentials)  # Note: using v3 for Calendar API
     
     def list_calendars(self) -> list:

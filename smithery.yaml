@@ -18,7 +18,10 @@ startCommand:
       credentialsDir:
         type: string
         description: Directory where OAuth credentials are stored.
+      serviceAccountFile:
+        type: string
+        description: Path to the service account JSON file.
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({command: 'uv', args: ['run', 'mcp-gsuite', '--gauth-file', config.gauthFile, '--accounts-file', config.accountsFile, '--credentials-dir', config.credentialsDir]})
+    (config) => ({command: 'uv', args: ['run', 'mcp-gsuite', '--gauth-file', config.gauthFile, '--accounts-file', config.accountsFile, '--credentials-dir', config.credentialsDir, '--service-account-file', config.serviceAccountFile]})

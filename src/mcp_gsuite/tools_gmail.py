@@ -10,6 +10,7 @@ from . import gmail
 import json
 from . import toolhandler
 import base64
+import os
 
 def decode_base64_data(file_data):
     standard_base64_data = file_data.replace("-", "+").replace("_", "/")
@@ -17,6 +18,9 @@ def decode_base64_data(file_data):
     if missing_padding:
         standard_base64_data += '=' * (4 - missing_padding)
     return base64.b64decode(standard_base64_data, validate=True)
+
+def get_service_account_file() -> str:
+    return "/var/secrets/google/calServiceAccount.json"
 
 class QueryEmailsToolHandler(toolhandler.ToolHandler):
     def __init__(self):
@@ -41,8 +45,7 @@ class QueryEmailsToolHandler(toolhandler.ToolHandler):
                             - 'from:example@gmail.com' for emails from a specific sender
                             - 'newer_than:2d' for emails from last 2 days
                             - 'has:attachment' for emails with attachments
-                            If not provided, returns recent emails without filtering.""",
-                        "required": False
+                            If not provided, returns recent emails without filtering."""
                     },
                     "max_results": {
                         "type": "integer",
@@ -52,17 +55,17 @@ class QueryEmailsToolHandler(toolhandler.ToolHandler):
                         "default": 100
                     }
                 },
-                "required": [toolhandler.USER_ID_ARG]
+                "required": ["__user_id__"]
             }
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-
         user_id = args.get(toolhandler.USER_ID_ARG)
         if not user_id:
             raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
 
-        gmail_service = gmail.GmailService(user_id=user_id)
+        service_account_file = get_service_account_file() if os.path.exists(get_service_account_file()) else None
+        gmail_service = gmail.GmailService(user_id=user_id, service_account_file=service_account_file)
         query = args.get('query')
         max_results = args.get('max_results', 100)
         emails = gmail_service.query_emails(query=query, max_results=max_results)
@@ -102,7 +105,9 @@ class GetEmailByIdToolHandler(toolhandler.ToolHandler):
         user_id = args.get(toolhandler.USER_ID_ARG)
         if not user_id:
             raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
-        gmail_service = gmail.GmailService(user_id=user_id)
+        
+        service_account_file = get_service_account_file() if os.path.exists(get_service_account_file()) else None
+        gmail_service = gmail.GmailService(user_id=user_id, service_account_file=service_account_file)
         email, attachments = gmail_service.get_email_by_id_with_attachments(args["email_id"])
 
         if email is None:
@@ -225,7 +230,9 @@ class CreateDraftToolHandler(toolhandler.ToolHandler):
         user_id = args.get(toolhandler.USER_ID_ARG)
         if not user_id:
             raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
-        gmail_service = gmail.GmailService(user_id=user_id)
+        
+        service_account_file = get_service_account_file() if os.path.exists(get_service_account_file()) else None
+        gmail_service = gmail.GmailService(user_id=user_id, service_account_file=service_account_file)
         draft = gmail_service.create_draft(
             to=args["to"],
             subject=args["subject"],
@@ -333,7 +340,9 @@ class ReplyEmailToolHandler(toolhandler.ToolHandler):
         user_id = args.get(toolhandler.USER_ID_ARG)
         if not user_id:
             raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
-        gmail_service = gmail.GmailService(user_id=user_id)
+        
+        service_account_file = get_service_account_file() if os.path.exists(get_service_account_file()) else None
+        gmail_service = gmail.GmailService(user_id=user_id, service_account_file=service_account_file)
         
         # First get the original message to extract necessary information
         original_message = gmail_service.get_email_by_id(args["original_message_id"])
@@ -499,7 +508,8 @@ class BulkSaveAttachmentsToolHandler(toolhandler.ToolHandler):
         if not user_id:
             raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
 
-        gmail_service = gmail.GmailService(user_id=user_id)
+        service_account_file = get_service_account_file() if os.path.exists(get_service_account_file()) else None
+        gmail_service = gmail.GmailService(user_id=user_id, service_account_file=service_account_file)
         results = []
 
         for attachment_info in args["attachments"]:
@@ -551,3 +561,72 @@ class BulkSaveAttachmentsToolHandler(toolhandler.ToolHandler):
                 continue
 
         return results
+
+class SendEmailToolHandler(toolhandler.ToolHandler):
+    def __init__(self):
+        super().__init__("send_gmail_email")
+
+    def get_tool_description(self) -> Tool:
+        return Tool(
+            name=self.name,
+            description="Sends a Gmail email message directly without creating a draft.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "__user_id__": self.get_user_id_arg_schema(),
+                    "to": {
+                        "type": "string",
+                        "description": "Email address of the recipient"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Subject line of the email"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Body content of the email"
+                    },
+                    "cc": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of email addresses to CC"
+                    }
+                },
+                "required": ["to", "subject", "body", toolhandler.USER_ID_ARG]
+            }
+        )
+
+    def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        required = ["to", "subject", "body"]
+        if not all(key in args for key in required):
+            raise RuntimeError(f"Missing required arguments: {', '.join(required)}")
+
+        user_id = args.get(toolhandler.USER_ID_ARG)
+        if not user_id:
+            raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
+        
+        service_account_file = get_service_account_file() if os.path.exists(get_service_account_file()) else None
+        gmail_service = gmail.GmailService(user_id=user_id, service_account_file=service_account_file)
+        message = gmail_service.send_email(
+            to=args["to"],
+            subject=args["subject"],
+            body=args["body"],
+            cc=args.get("cc")
+        )
+
+        if message is None:
+            return [
+                TextContent(
+                    type="text",
+                    text="Failed to send email"
+                )
+            ]
+
+        return [
+            TextContent(
+                type="text",
+                text=json.dumps(message, indent=2)
+            )
+        ]

@@ -8,11 +8,42 @@ from typing import Tuple
 
 
 class GmailService():
-    def __init__(self, user_id: str):
-        credentials = gauth.get_stored_credentials(user_id=user_id)
-        if not credentials:
-            raise RuntimeError("No Oauth2 credentials stored")
-        self.service = build('gmail', 'v1', credentials=credentials)
+    def __init__(self, user_id: str, service_account_file: str = None):
+        """
+        Initialize GmailService with either service account or OAuth2 credentials.
+        
+        Args:
+            user_id (str): Email address of the user to access Gmail for
+            service_account_file (str, optional): Path to the service account JSON file
+        """
+        try:
+            if service_account_file:
+                # Use service account authentication with impersonation
+                credentials = gauth.get_service_account_credentials(
+                    service_account_file,
+                    user_to_impersonate=user_id
+                )
+            else:
+                # Use OAuth2 authentication
+                credentials = gauth.get_stored_credentials(user_id=user_id)
+                if not credentials:
+                    raise RuntimeError("No Oauth2 credentials stored")
+                    
+            # Build the Gmail service
+            self.service = build('gmail', 'v1', credentials=credentials)
+            self.user_id = user_id
+            
+            # Test the connection
+            try:
+                profile = self.service.users().getProfile(userId='me').execute()
+                logging.info(f"Successfully connected to Gmail API for user: {profile.get('emailAddress')}")
+            except Exception as e:
+                logging.error(f"Failed to connect to Gmail API: {str(e)}")
+                raise
+                
+        except Exception as e:
+            logging.error(f"Error initializing GmailService: {str(e)}")
+            raise
 
     def _parse_message(self, txt, parse_body=False) -> dict | None:
         """
@@ -146,7 +177,7 @@ class GmailService():
             
             # Get the list of messages
             result = self.service.users().messages().list(
-                userId='me',
+                userId=self.user_id,  # Use the user_id instead of 'me'
                 maxResults=max_results,
                 q=query if query else ''
             ).execute()
@@ -157,7 +188,7 @@ class GmailService():
             # Fetch full message details for each message
             for msg in messages:
                 txt = self.service.users().messages().get(
-                    userId='me', 
+                    userId=self.user_id,  # Use the user_id instead of 'me'
                     id=msg['id']
                 ).execute()
                 parsed_message = self._parse_message(txt=txt, parse_body=False)
@@ -402,5 +433,45 @@ class GmailService():
             
         except Exception as e:
             logging.error(f"Error retrieving attachment {attachment_id} from message {message_id}: {str(e)}")
+            logging.error(traceback.format_exc())
+            return None
+
+    def send_email(self, to: str, subject: str, body: str, cc: list[str] | None = None) -> dict | None:
+        """
+        Send an email message directly without creating a draft.
+        
+        Args:
+            to (str): Email address of the recipient
+            subject (str): Subject line of the email
+            body (str): Body content of the email
+            cc (list[str], optional): List of email addresses to CC
+            
+        Returns:
+            dict: Sent message data if successful
+            None: If sending fails
+        """
+        try:
+            # Create the message in MIME format
+            mime_message = MIMEText(body)
+            mime_message['to'] = to
+            mime_message['subject'] = subject
+            if cc:
+                mime_message['cc'] = ','.join(cc)
+                
+            # Encode the message
+            raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode('utf-8')
+            
+            # Send the message
+            message = self.service.users().messages().send(
+                userId='me',
+                body={
+                    'raw': raw_message
+                }
+            ).execute()
+            
+            return message
+            
+        except Exception as e:
+            logging.error(f"Error sending email: {str(e)}")
             logging.error(traceback.format_exc())
             return None

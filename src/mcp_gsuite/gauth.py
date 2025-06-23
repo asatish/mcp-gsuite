@@ -12,6 +12,7 @@ import os
 import pydantic
 import json
 import argparse
+from google.oauth2 import service_account
 
 
 def get_gauth_file() -> str:
@@ -32,22 +33,24 @@ REDIRECT_URI = 'http://localhost:4100/code'
 SCOPES = [
     "openid",
     "https://www.googleapis.com/auth/userinfo.email",
-    "https://mail.google.com/",
+    "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/calendar"
 ]
 
 
 class AccountInfo(pydantic.BaseModel):
-
     email: str
-    account_type: str
-    extra_info: str
+    service_account: str | None = None
+    account_type: str | None = None
+    extra_info: str | None = None
 
-    def __init__(self, email: str, account_type: str, extra_info: str = ""):
-        super().__init__(email=email, account_type=account_type, extra_info=extra_info)
+    def __init__(self, email: str, service_account: str | None = None, account_type: str | None = None, extra_info: str | None = None):
+        super().__init__(email=email, service_account=service_account, account_type=account_type, extra_info=extra_info)
 
     def to_description(self):
-        return f"""Account for email: {self.email} of type: {self.account_type}. Extra info for: {self.extra_info}"""
+        if self.service_account:
+            return f"""Service account for email: {self.email}"""
+        return f"""Account for email: {self.email} of type: {self.account_type or 'unknown'}. Extra info: {self.extra_info or 'none'}"""
 
 
 def get_accounts_file() -> str:
@@ -256,4 +259,41 @@ def get_credentials(authorization_code, state):
         # No refresh token has been retrieved.
     authorization_url = get_authorization_url(email_address, state)
     raise NoRefreshTokenException(authorization_url)
+
+
+def get_service_account_credentials(service_account_file: str, scopes: list[str] = None, user_to_impersonate: str = None) -> service_account.Credentials:
+    """
+    Get service account credentials with optional impersonation.
+    
+    Args:
+        service_account_file (str): Path to the service account JSON file
+        scopes (list[str], optional): List of OAuth scopes to request
+        user_to_impersonate (str, optional): Email of the user to impersonate
+    
+    Returns:
+        service_account.Credentials: Service account credentials
+    """
+    try:
+        # Default scopes if none provided
+        if scopes is None:
+            scopes = [
+                'https://www.googleapis.com/auth/gmail.send',
+                'https://www.googleapis.com/auth/gmail.readonly'
+            ]
+            
+        # Create credentials with domain-wide delegation
+        credentials = service_account.Credentials.from_service_account_file(
+            service_account_file,
+            scopes=scopes,
+            subject=user_to_impersonate
+        )
+        
+        # Refresh the credentials to ensure they're valid
+        credentials.refresh(Request())
+        
+        return credentials
+        
+    except Exception as e:
+        logging.error(f"Error getting service account credentials: {str(e)}")
+        raise
 

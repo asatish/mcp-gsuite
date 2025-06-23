@@ -1,0 +1,54 @@
+{
+    "name": "gmail_mcp",
+    "description": "A tool for interacting with Gmail using a service account. Can send emails, read unread messages, and mark messages as read.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["send_email", "read_unread_messages", "mark_as_read"],
+                "description": "The action to perform with Gmail"
+            },
+            "email_data": {
+                "type": "object",
+                "properties": {
+                    "to": {
+                        "type": "string",
+                        "description": "Recipient email address"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Email subject"
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Email body content"
+                    }
+                },
+                "required": ["to", "subject", "body"],
+                "description": "Email data for sending emails"
+            },
+            "message_id": {
+                "type": "string",
+                "description": "Gmail message ID for marking messages as read"
+            }
+        },
+        "required": ["action"],
+        "oneOf": [
+            {
+                "properties": {
+                    "action": { "const": "send_email" },
+                    "email_data": { "type": "object" }
+                },
+                "required": ["email_data"]
+            },
+            {
+                "properties": {
+                    "action": { "const": "mark_as_read" },
+                    "message_id": { "type": "string" }
+                },
+                "required": ["message_id"]
+            }
+        ]
+    }
+} 

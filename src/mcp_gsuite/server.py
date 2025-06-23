@@ -1,4 +1,3 @@
-
 import logging
 from collections.abc import Sequence
 from functools import lru_cache
@@ -22,6 +21,19 @@ from urllib.parse import (
     urlparse,
     parse_qs,
 )
+import argparse
+import os
+
+def get_service_account_file() -> str:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--service-account-file",
+        type=str,
+        default="/var/secrets/google/calServiceAccount.json",
+        help="Path to service account JSON file",
+    )
+    args, _ = parser.parse_known_args()
+    return args.service_account_file
 
 class OauthListener(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -120,6 +132,7 @@ add_tool_handler(tools_gmail.ReplyEmailToolHandler())
 add_tool_handler(tools_gmail.GetAttachmentToolHandler())
 add_tool_handler(tools_gmail.BulkGetEmailsByIdsToolHandler())
 add_tool_handler(tools_gmail.BulkSaveAttachmentsToolHandler())
+add_tool_handler(tools_gmail.SendEmailToolHandler())
 
 add_tool_handler(tools_calendar.ListCalendarsToolHandler())
 add_tool_handler(tools_calendar.GetCalendarEventsToolHandler())
@@ -142,7 +155,15 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | ImageCo
         if toolhandler.USER_ID_ARG not in arguments:
             raise RuntimeError("user_id argument is missing in dictionary.")
 
-        setup_oauth2(user_id=arguments.get(toolhandler.USER_ID_ARG, ""))
+        user_id = arguments.get(toolhandler.USER_ID_ARG, "")
+        service_account_file = get_service_account_file()
+        
+        # Try service account first
+        if os.path.exists(service_account_file):
+            logging.info(f"Using service account authentication with file: {service_account_file}")
+        else:
+            # Fall back to OAuth2
+            setup_oauth2(user_id=user_id)
 
         tool_handler = get_tool_handler(name)
         if not tool_handler:
@@ -157,11 +178,18 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | ImageCo
 
 async def main():
     print(sys.platform)
-    accounts = gauth.get_account_info()
-    for account in accounts:
-        creds = gauth.get_stored_credentials(user_id=account.email)
-        if creds:
-            logging.info(f"found credentials for {account.email}")
+    service_account_file = get_service_account_file()
+    
+    # If service account file exists, use service account authentication
+    if os.path.exists(service_account_file):
+        logging.info(f"Using service account authentication with file: {service_account_file}")
+    else:
+        # Fall back to OAuth2 authentication
+        accounts = gauth.get_account_info()
+        for account in accounts:
+            creds = gauth.get_stored_credentials(user_id=account.email)
+            if creds:
+                logging.info(f"found credentials for {account.email}")
 
     from mcp.server.stdio import stdio_server
 
