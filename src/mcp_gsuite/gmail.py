@@ -9,6 +9,7 @@ from typing import Tuple
 
 class GmailService():
     def __init__(self, user_id: str, service_account_file: str = None):
+        print(f"Initializing GmailService for user: {user_id}")
         """
         Initialize GmailService with either service account or OAuth2 credentials.
         
@@ -53,6 +54,7 @@ class GmailService():
             raise RuntimeError(f"Failed to initialize Gmail API. Check service account permissions and configuration. Details: {e}")
 
     def _parse_message(self, txt, parse_body=False) -> dict | None:
+        print(f"Parsing message for user: {self.user_id}")
         """
         Parse a Gmail message into a structured format.
         
@@ -120,6 +122,7 @@ class GmailService():
             return None
 
     def _extract_body(self, payload) -> str | None:
+        print(f"Extracting body for user: {self.user_id}")
         """
         Extract the email body from the payload.
         Handles both multipart and single part messages, including nested multiparts.
@@ -167,6 +170,7 @@ class GmailService():
             return None
 
     def query_emails(self, query=None, max_results=100):
+        print(f"Querying emails for user: {self.user_id}")
         """
         Query emails from Gmail based on a search query.
         
@@ -210,6 +214,7 @@ class GmailService():
             return []
         
     def get_email_by_id_with_attachments(self, email_id: str) -> Tuple[dict, dict] | Tuple[None, dict]:
+        print(f"Getting email by ID with attachments for user: {self.user_id}")
         """
         Fetch and parse a complete email message by its ID including attachment IDs.
         
@@ -269,6 +274,7 @@ class GmailService():
             return None, {}
         
     def create_draft(self, to: str, subject: str, body: str, cc: list[str] | None = None) -> dict | None:
+        print(f"Creating draft for user: {self.user_id}")
         """
         Create a draft email message.
         
@@ -320,6 +326,7 @@ class GmailService():
             return None
         
     def delete_draft(self, draft_id: str) -> bool:
+        print(f"Deleting draft for user: {self.user_id}")
         """
         Delete a draft email message.
         
@@ -342,6 +349,7 @@ class GmailService():
             return False
         
     def create_reply(self, original_message: dict, reply_body: str, send: bool = False, cc: list[str] | None = None) -> dict | None:
+        print(f"Creating reply for user: {self.user_id}")
         """
         Create a reply to an email message and either send it or save as draft.
         
@@ -416,6 +424,7 @@ class GmailService():
             return None
         
     def get_attachment(self, message_id: str, attachment_id: str) -> dict | None:
+        print(f"Getting attachment for user: {self.user_id}")
         """
         Retrieves a Gmail attachment by its ID.
         
@@ -444,6 +453,7 @@ class GmailService():
             return None
 
     def send_email(self, to: str, subject: str, body: str, cc: list[str] | None = None) -> dict | None:
+        print(f"Sending email for user: {self.user_id}")
         """
         Send an email message directly without creating a draft.
         

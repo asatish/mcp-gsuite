@@ -13,6 +13,7 @@ import base64
 import os
 
 def decode_base64_data(file_data):
+    print(f"Decoding base64 data")
     standard_base64_data = file_data.replace("-", "+").replace("_", "/")
     missing_padding = len(standard_base64_data) % 4
     if missing_padding:
@@ -20,13 +21,16 @@ def decode_base64_data(file_data):
     return base64.b64decode(standard_base64_data, validate=True)
 
 def get_service_account_file() -> str:
+    print(f"Getting service account file")
     return "/var/secrets/google/calServiceAccount.json"
 
 class QueryEmailsToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing QueryEmailsToolHandler")
         super().__init__("query_gmail_emails")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for QueryEmailsToolHandler")
         return Tool(
             name=self.name,
             description="""Query Gmail emails based on an optional search query. 
@@ -60,6 +64,7 @@ class QueryEmailsToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         user_id = args.get(toolhandler.USER_ID_ARG)
         if not user_id:
             raise RuntimeError(f"Missing required argument: {toolhandler.USER_ID_ARG}")
@@ -79,9 +84,11 @@ class QueryEmailsToolHandler(toolhandler.ToolHandler):
 
 class GetEmailByIdToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing GetEmailByIdToolHandler")
         super().__init__("get_gmail_email")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for GetEmailByIdToolHandler")
         return Tool(
             name=self.name,
             description="Retrieves a complete Gmail email message by its ID, including the full message body and attachment IDs.",
@@ -99,6 +106,7 @@ class GetEmailByIdToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         if "email_id" not in args:
             raise RuntimeError("Missing required argument: email_id")
 
@@ -129,9 +137,11 @@ class GetEmailByIdToolHandler(toolhandler.ToolHandler):
 
 class BulkGetEmailsByIdsToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing BulkGetEmailsByIdsToolHandler")
         super().__init__("bulk_get_gmail_emails")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for BulkGetEmailsByIdsToolHandler")
         return Tool(
             name=self.name,
             description="Retrieves multiple Gmail email messages by their IDs in a single request, including the full message bodies and attachment IDs.",
@@ -152,6 +162,7 @@ class BulkGetEmailsByIdsToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         if "email_ids" not in args:
             raise RuntimeError("Missing required argument: email_ids")
 
@@ -184,9 +195,11 @@ class BulkGetEmailsByIdsToolHandler(toolhandler.ToolHandler):
 
 class CreateDraftToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing CreateDraftToolHandler")
         super().__init__("create_gmail_draft")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for CreateDraftToolHandler")
         return Tool(
             name=self.name,
             description="""Creates a draft email message from scratch in Gmail with specified recipient, subject, body, and optional CC recipients.
@@ -223,6 +236,7 @@ class CreateDraftToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         required = ["to", "subject", "body"]
         if not all(key in args for key in required):
             raise RuntimeError(f"Missing required arguments: {', '.join(required)}")
@@ -257,9 +271,11 @@ class CreateDraftToolHandler(toolhandler.ToolHandler):
 
 class DeleteDraftToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing DeleteDraftToolHandler")
         super().__init__("delete_gmail_draft")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for DeleteDraftToolHandler")
         return Tool(
             name=self.name,
             description="Deletes a Gmail draft message by its ID. This action cannot be undone.",
@@ -277,6 +293,7 @@ class DeleteDraftToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         if "draft_id" not in args:
             raise RuntimeError("Missing required argument: draft_id")
 
@@ -295,9 +312,11 @@ class DeleteDraftToolHandler(toolhandler.ToolHandler):
 
 class ReplyEmailToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing ReplyEmailToolHandler")
         super().__init__("reply_gmail_email")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for ReplyEmailToolHandler")
         return Tool(
             name=self.name,
             description="""Creates a reply to an existing Gmail email message and either sends it or saves as draft.
@@ -334,6 +353,7 @@ class ReplyEmailToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         if not all(key in args for key in ["original_message_id", "reply_body"]):
             raise RuntimeError("Missing required arguments: original_message_id and reply_body")
 
@@ -379,9 +399,11 @@ class ReplyEmailToolHandler(toolhandler.ToolHandler):
 
 class GetAttachmentToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing GetAttachmentToolHandler")
         super().__init__("get_gmail_attachment")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for GetAttachmentToolHandler")
         return Tool(
             name=self.name,
             description="Retrieves a Gmail attachment by its ID.",
@@ -415,6 +437,7 @@ class GetAttachmentToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         if "message_id" not in args:
             raise RuntimeError("Missing required argument: message_id")
         if "attachment_id" not in args:
@@ -464,9 +487,11 @@ class GetAttachmentToolHandler(toolhandler.ToolHandler):
 
 class BulkSaveAttachmentsToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing BulkSaveAttachmentsToolHandler")
         super().__init__("bulk_save_gmail_attachments")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for BulkSaveAttachmentsToolHandler")
         return Tool(
             name=self.name,
             description="Saves multiple Gmail attachments to disk by their message IDs and attachment IDs in a single request.",
@@ -501,6 +526,7 @@ class BulkSaveAttachmentsToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         if "attachments" not in args:
             raise RuntimeError("Missing required argument: attachments")
 
@@ -564,9 +590,11 @@ class BulkSaveAttachmentsToolHandler(toolhandler.ToolHandler):
 
 class SendEmailToolHandler(toolhandler.ToolHandler):
     def __init__(self):
+        print(f"Initializing SendEmailToolHandler")
         super().__init__("send_gmail_email")
 
     def get_tool_description(self) -> Tool:
+        print(f"Getting tool description for SendEmailToolHandler")
         return Tool(
             name=self.name,
             description="Sends a Gmail email message directly without creating a draft.",
@@ -599,6 +627,7 @@ class SendEmailToolHandler(toolhandler.ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+        print(f"Running tool: {self.name} with args: {args}")
         required = ["to", "subject", "body"]
         if not all(key in args for key in required):
             raise RuntimeError(f"Missing required arguments: {', '.join(required)}")

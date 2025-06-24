@@ -33,6 +33,11 @@ def get_service_account_file() -> str:
         default="/var/secrets/google/calServiceAccount.json",
         help="Path to service account JSON file",
     )
+    parser.add_argument(
+        "--impersonate",
+        type=str,
+        help="Email address to impersonate for GSuite API calls."
+    )
     args, unknown = parser.parse_known_args()
     logging.info(f"mcp-gsuite parsed args: {args}")
     logging.info(f"mcp-gsuite unknown args: {unknown}")

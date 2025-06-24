@@ -2,6 +2,7 @@ from . import server
 import asyncio
 
 def main():
+    print("mcp-gsuite main")
     """Main entry point for the package."""
     asyncio.run(server.main())
 
